@@ -58,8 +58,7 @@ def videoDownload():
         'noplaylist': True,
         'threads': 16,
         'user-agent': "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:68.0) Gecko/20100101 Firefox/68.0",
-        'outtmpl': downloadPath + '/%(title)s.%(ext)s',
-        'P': downloadPath
+        'outtmpl': downloadPath + '/%(title)s.%(ext)s'
     }
     url = video_link.get()
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
