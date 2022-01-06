@@ -1,82 +1,169 @@
-from __future__ import unicode_literals
-import time
-import subprocess
-from tkinter import *
-from tkinter import ttk
-import os
-from time import sleep
+theme = "DarkAmber" #Open themes.py and choose the theme you like the most! Replace 
+                    #DarkAmber with the theme of your choice (keep the quotation marks)
+
+# --------------- IMPORTS ---------------#
 
 try:
     import yt_dlp
-    
+    import PySimpleGUI as sg
+    import os
+    import ctypes
+    import platform
+    import resources.logo as logo
+    import requests
 except Exception:
-
     from ctypes import windll   
-    windll.user32.MessageBoxW(0, "The program is going to automatically install the required modules. Some CMD windows will show up, and then it will run normally. Press OK to continue.",
-                              "Not So Fatal Error: Missing Python Modules", 0)
-
-
+    windll.user32.MessageBoxW(0, "The program is going to automatically install the required modules. Some CMD windows will show up, and then it will run normally. Press OK to continue.", "Not so fatal error: Missing Python modules", 0)
     os.system('cmd /c "pip install yt_dlp"')
+    os.system('cmd /c "pip install PySimpleGUI"')
     import yt_dlp
-
-with open("config.txt", "r") as f:
-    config = str(f.read())      # Get user options for later (Download path and quality)
-exec(config)
-
-if 'downloadPath' not in locals():
-    downloadPath = os.path.expanduser('~\Downloads')
-if downloadPath == 'DEFAULT':
-    downloadPath = os.path.expanduser('~\Downloads')
-if 'chosenQuality' not in locals():
-    chosenQuality = "best"
-  
-
-# Config.txt variable names: downloadPath, chosenQuality
-
-window = Tk()
-window.geometry('1000x500')
-window.config(bg='white')
-window.title('Much Cool Youtube Downloader by dsc.bio/Epsi')
-windowlogo = PhotoImage(file='logo.png')
-window.iconphoto(False, windowlogo)
-
-Label(window, text='Youtube Video Downloader!!!!', font=(
-    'Comic Sans MS', 30), bg="red").pack(padx=5, pady=50)
-
-video_link = StringVar()
-
-Label(window, text='Enter video link: ', font=(
-    'Comic Sans MS', 20, 'italic'), bd=4).place(relx=0.05, rely=0.2)
-Entry_link = Entry(window, width=50, font=20,
-                   textvariable=video_link, bd=4).place(relx=0.05, rely=0.28)
+    import PySimpleGUI as sg
+    import os
+    import ctypes
+    import platform
+    import resources.logo as logo
+    import requests
 
 
-def videoDownload():
+# --------------- MAIN PROGRAM --------------- #
+
+sg.DEFAULT_FONT = 'Calibri' # You can change that if you want
+
+sg.theme(str(theme)) 
+
+if int(platform.release()) >= 8:    # Prevents blurry text & buttons by making the program DPI aware
+        ctypes.windll.shcore.SetProcessDpiAwareness(True)
+
+layout = [
+    [sg.Text("Video+ Downloader", font='Calibri 25', auto_size_text=True)],
+    [sg.Text("Enter video link:", font="Calibri 12"), sg.InputText(key='-link-')],
+    [sg.Button("Download"), sg.Button("Quit")],
+    [sg.Text("\nOptions:", font='Calibri 18 bold', auto_size_text=True)],
+    [sg.Text("Quality:", font="Calibri 12"), sg.Combo(["Best video with audio (recommended)","Worst video with audio", "Best video without audio", "Worst video without audio", "Best audio only", "Worst audio only"], default_value="Best video with audio (recommended)", readonly=True, key="-quality-")],
+    [sg.Text("Download location:", font="Calibri 12"),sg.Text("", font="Calibri 12 bold"), sg.FolderBrowse("Choose Folder", key="-folder-")],
+    [sg.Output(size=(60,5))]
+]
+
+tray = sg.SystemTray(menu=[[],"Hi"],data_base64=logo.logo)
+window = sg.Window("Youtube+ Video Downloader by Epsi", layout, resizable=False, icon=logo.logo, titlebar_icon=logo.logo, finalize=True)
+
+def videoDownload(quality, folder, link):
     ydl_opts = {
-        'format': chosenQuality,    
-        
+        'format': quality,
         'noplaylist': True,
-        'threads': 16,
-        'user-agent': "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:68.0) Gecko/20100101 Firefox/68.0",
-        'outtmpl': downloadPath + '/%(title)s.%(ext)s'
+        'no-mtime': True,
+        'newline': True,
+        'sponsorblock-mark': 'all',
+        'no-colors': True,
+        'outtmpl': folder + '/%(title)s.%(ext)s'
     }
-    url = video_link.get()
+
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        ydl.download([url])
-    Label(window, text='Download Completed', font=('Comic Sans MS',
-          25, 'bold'), bg='lightgreen').place(relx=0.3, rely=0.4)
-    Label(window, text=f'Check {downloadPath} to see your downloaeded video!!!', font=(
-        "Comic Sans MS", 15), fg="lightgreen").place(relx=0.3, rely=0.5)
-  
+        ydl.download([link])
 
-Label(window, text=f'Settings:\n\nQuality:\n{chosenQuality}\n\nDownload path:\n{downloadPath}', font=('Comic Sans MS',
-                                                             16), anchor='w').place(relx=0.4, rely= 0.4)
+print("This is the console. Download progress will appear here.")
 
-Label(window, text=f'Change the settings in config.txt!', font=('Comic Sans MS',
-                                                             14)).place(relx=0.35, rely= 0.83)
-  
+while True: # Main Loop
 
-Button(window, text="Download", font=("Comic Sans MS", 25, "bold"),
-       bg="gray", command=videoDownload).place(relx=0.05, rely=0.6)
+    event, values = window.read()
+    
+    if event == 'Download':
+        
+        if values["-folder-"] == '':
+            tray.show_message("Error", "You must choose a download path", time=(50,3000))
+        
+        if values["-quality-"] == '':
+            tray.show_message("Error", "You must choose a video quality", time=(50,3000))
 
-window.mainloop()
+        if values["-link-"] == '':
+            tray.show_message("Error", "You must choose a download link", time=(50,3000))
+
+        try:
+            response = requests.get(values["-link-"])
+            link=str(values["-link-"])
+        except Exception:
+            tray.show_message("Error", "Invalid URL", time=(50,3000))
+
+        folder=str(values["-folder-"])
+
+        if str(values["-quality-"]) == "Best video with audio (recommended)":
+            quality = "best"
+        elif str(values["-quality-"]) == "Worst video with audio":
+            quality = "worst"
+        elif str(values["-quality-"]) == "Best video without audio":
+            quality = "bestvideo"
+        elif str(values["-quality-"]) == "Worst video without audio":
+            quality = "worstvideo"
+        elif str(values["-quality-"]) == "Best audio only":
+            quality = "bestaudio"
+        elif str(values["-quality-"]) == "Worst audio only":
+            quality = "worstaudio"
+        else:
+            tray.show_message("Error", "Invalid Quality", time=(50,3000))
+        try:
+            videoDownload(quality, folder, link)
+            print("Download success")
+            tray.show_message("Success", "Downloaded video", time=(50,3000))
+        except Exception as e:
+            print(e)
+            pass
+
+    if event in ('Quit',sg.WIN_CLOSED):
+        break
+
+window.close()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#huh
