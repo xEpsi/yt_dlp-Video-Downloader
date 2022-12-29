@@ -6,5 +6,5 @@ IMPORTANT: The video file's modification date is set to the Youtube
 video's release date, so you might have to scroll down to find it.
 
 
-        --- Made by Epsi ---
-        --- dsc.bio/Epsi ---
+        ---    Made by Epsi    ---
+        --- https://epsi.space ---
